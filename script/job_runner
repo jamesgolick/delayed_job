@@ -1,0 +1,22 @@
+#!/usr/bin/env ruby
+
+pid_file = File.dirname(__FILE__) + '/../log/job_runner.pid'
+running  = if File.exists?(pid_file)
+            `ps -f -p #{File.read(pid_file)}`.split("\n").length == 2
+          else
+            false
+          end
+
+if running
+  abort "Job runner is already running."
+else
+  File.open(pid_file, 'w+') do |f|
+    f << Process.pid
+  end
+end
+  
+require File.dirname(__FILE__) + '/../config/environment'
+Dir['app/models/*.rb'].each { |m| require m }
+
+Delayed::Worker.new(:pid_file => pid_file).start
+
